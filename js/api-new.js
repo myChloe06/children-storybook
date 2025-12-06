@@ -7,11 +7,12 @@ class APIConfig {
     }
 
     // 保存配置到 localStorage（临时，测试用）
-    save(nanoBananaKey, textAPIUrl, textAPIKey, textAPIModel) {
+    save(nanoBananaKey, textAPIUrl, textAPIKey, textAPIModel, apiVersion = 'kie') {
         localStorage.setItem('nanobanana_api_key', nanoBananaKey);
         localStorage.setItem('text_api_url', textAPIUrl);
         localStorage.setItem('text_api_key', textAPIKey);
         localStorage.setItem('text_api_model', textAPIModel);
+        localStorage.setItem('api_version', apiVersion);
     }
 
     // 从 localStorage 读取配置
@@ -20,7 +21,8 @@ class APIConfig {
             nanoBananaKey: localStorage.getItem('nanobanana_api_key'),
             textAPIUrl: localStorage.getItem('text_api_url'),
             textAPIKey: localStorage.getItem('text_api_key'),
-            textAPIModel: localStorage.getItem('text_api_model')
+            textAPIModel: localStorage.getItem('text_api_model'),
+            apiVersion: localStorage.getItem('api_version') || 'kie'
         };
     }
 
@@ -37,6 +39,7 @@ class APIConfig {
         localStorage.removeItem('text_api_url');
         localStorage.removeItem('text_api_key');
         localStorage.removeItem('text_api_model');
+        localStorage.removeItem('api_version');
     }
 }
 

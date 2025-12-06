@@ -134,6 +134,36 @@ header .subtitle {
     color: #dc3545;
 }
 
+/* API 版本切换 */
+.api-version-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+}
+
+.radio-option:hover {
+    background-color: #f0f2f5;
+}
+
+.radio-option input[type="radio"] {
+    margin: 0;
+}
+
+.radio-option span {
+    font-size: 0.9em;
+    color: #495057;
+}
+
 /* 场景选择 */
 .scene-selection {
     display: flex;

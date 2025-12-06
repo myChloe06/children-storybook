@@ -3,6 +3,7 @@ class StorybookApp {
     constructor() {
         this.apiConfig = new APIConfig();
         this.apiClient = new APIClient(this.apiConfig);
+        this.yunwuClient = new YunwuAPIClient();  // 云雾API客户端
         this.currentScene = null;
         this.currentTitle = null;
         this.currentVocabulary = null;
@@ -78,6 +79,11 @@ class StorybookApp {
             document.getElementById('text-api-url').value = config.textAPIUrl;
             document.getElementById('text-api-key').value = config.textAPIKey;
             document.getElementById('text-api-model').value = config.textAPIModel;
+
+            // 加载API版本选择
+            if (config.apiVersion) {
+                document.querySelector(`input[name="api-version"][value="${config.apiVersion}"]`).checked = true;
+            }
         }
     }
 
@@ -87,13 +93,14 @@ class StorybookApp {
         const textAPIUrl = document.getElementById('text-api-url').value.trim();
         const textAPIKey = document.getElementById('text-api-key').value.trim();
         const textAPIModel = document.getElementById('text-api-model').value.trim();
+        const apiVersion = document.querySelector('input[name="api-version"]:checked').value;
 
         if (!nanoBananaKey || !textAPIUrl || !textAPIKey || !textAPIModel) {
             alert('请填写所有必填项');
             return;
         }
 
-        this.apiConfig.save(nanoBananaKey, textAPIUrl, textAPIKey, textAPIModel);
+        this.apiConfig.save(nanoBananaKey, textAPIUrl, textAPIKey, textAPIModel, apiVersion);
         alert('API 配置已保存！');
     }
 
@@ -337,8 +344,30 @@ class StorybookApp {
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
 
         try {
-            // 调用 API 生成图片
-            this.generatedImageBase64 = await this.apiClient.generateImage(prompt);
+            // 获取当前选择的API版本
+            const apiVersion = document.querySelector('input[name="api-version"]:checked').value;
+            const apiKey = document.getElementById('nanobanana-key').value.trim();
+
+            if (!apiKey) {
+                throw new Error('请输入 API Key');
+            }
+
+            let base64Image;
+
+            // 根据选择的API版本调用不同的方法
+            if (apiVersion === 'yunwu') {
+                // 使用云雾API（同步模式）
+                console.log('使用云雾API生成图片...');
+                this.updateLoadingText('正在生成图片（云雾API）...');
+                base64Image = await this.yunwuClient.generateImage(prompt, apiKey);
+            } else {
+                // 使用NanoBanana API（异步任务模式）
+                console.log('使用NanoBanana API生成图片...');
+                this.updateLoadingText('正在生成图片（异步任务模式）...');
+                base64Image = await this.apiClient.generateImage(prompt);
+            }
+
+            this.generatedImageBase64 = base64Image;
 
             // 显示图片
             const imgElement = document.getElementById('result-image');
@@ -353,6 +382,14 @@ class StorybookApp {
         } catch (error) {
             alert('生成图片失败：' + error.message);
             document.getElementById('result-section').style.display = 'none';
+        }
+    }
+
+    // 更新加载文本
+    updateLoadingText(text) {
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) {
+            loadingText.textContent = text;
         }
     }
 
