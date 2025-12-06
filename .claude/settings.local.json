@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/知识库合集/水晶知识库/水晶课/**)",
+      "Bash(ffmpeg:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

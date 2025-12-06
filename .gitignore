@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+nul
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# API keys (for security)
+.env
+.env.local
+.env.*.local
+
+# Debug files
+debug-chrome*.js

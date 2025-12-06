@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片 API 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="password"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #image-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #result-image {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>图片 API 测试工具</h1>
+        <p>用于调试和分析 NanoBanana API 的响应结构</p>
+
+        <div class="input-group">
+            <label for="api-key">NanoBanana API Key:</label>
+            <input type="password" id="api-key" placeholder="输入您的 NanoBanana API Key">
+        </div>
+
+        <div class="input-group">
+            <label for="test-prompt">测试提示词:</label>
+            <textarea id="test-prompt" rows="3" placeholder="输入图片生成提示词">一个红苹果，卡通风格，白色背景</textarea>
+        </div>
+
+        <button onclick="testAPI()">测试 API</button>
+        <button onclick="testSimplePrompt()">测试简单提示词</button>
+        <button onclick="clearResult()">清除结果</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在生成图片，请稍候...</p>
+        </div>
+
+        <div id="result"></div>
+
+        <div id="image-container">
+            <img id="result-image" style="display: none;" alt="生成的图片">
+        </div>
+    </div>
+
+    <script>
+        // API 配置
+        const API_URL = 'https://yunwu.ai/v1beta/models/gemini-3-pro-image-preview:generateContent';
+
+        function log(message, data = null) {
+            const result = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            result.textContent += `[${timestamp}] ${message}\n`;
+            if (data) {
+                result.textContent += `${JSON.stringify(data, null, 2)}\n\n`;
+            }
+            result.scrollTop = result.scrollHeight;
+        }
+
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function clearResult() {
+            document.getElementById('result').textContent = '';
+            document.getElementById('result-image').style.display = 'none';
+        }
+
+        async function testAPI() {
+            const apiKey = document.getElementById('api-key').value;
+            const prompt = document.getElementById('test-prompt').value;
+
+            if (!apiKey) {
+                alert('请输入 API Key');
+                return;
+            }
+
+            clearResult();
+            showLoading(true);
+            log('开始测试 API...');
+            log('API Key:', apiKey.substring(0, 10) + '...');
+            log('提示词:', prompt);
+
+            try {
+                // 构造请求 URL
+                const url = `${API_URL}?key=${encodeURIComponent(apiKey)}`;
+                log('请求 URL:', url);
+
+                // 构造请求体
+                const requestBody = {
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["IMAGE"],
+                        imageConfig: {
+                            aspectRatio: "1:1",
+                            imageSize: "HD"
+                        }
+                    }
+                };
+
+                log('请求体:', requestBody);
+
+                // 发送请求
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                log(`\n响应状态: ${response.status} ${response.statusText}`);
+                log('响应头:', Object.fromEntries(response.headers.entries()));
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                // 解析响应
+                const result = await response.json();
+                log('\n=== 完整 API 响应 ===');
+                log(result);
+
+                // 分析响应结构
+                log('\n=== 响应结构分析 ===');
+                if (result.candidates) {
+                    log(`候选结果数量: ${result.candidates.length}`);
+
+                    const candidate = result.candidates[0];
+                    log('\n第一个候选结果:');
+                    log(candidate);
+
+                    // 检查 content parts
+                    if (candidate.content && candidate.content.parts) {
+                        log(`\nContent parts 数量: ${candidate.content.parts.length}`);
+
+                        candidate.content.parts.forEach((part, index) => {
+                            log(`\nPart ${index}:`);
+                            log('键:', Object.keys(part));
+
+                            // 检查每个部分的内容
+                            for (const [key, value] of Object.entries(part)) {
+                                if (key === 'inline_data' && value.data) {
+                                    log(`✅ 找到图片数据 (inline_data)`);
+                                    log(`图片数据长度: ${value.data.length}`);
+
+                                    // 显示图片
+                                    const img = document.getElementById('result-image');
+                                    img.src = `data:image/jpeg;base64,${value.data}`;
+                                    img.style.display = 'block';
+                                } else if (key === 'thoughtSignature') {
+                                    log(`⚠️ 找到 thoughtSignature:`, value);
+                                    log('这表示 API 还在思考过程中，可能需要等待更长时间');
+                                } else if (key === 'text') {
+                                    log(`文本内容:`, value);
+                                } else {
+                                    log(`${key}:`, typeof value === 'object' ? JSON.stringify(value) : value);
+                                }
+                            }
+                        });
+                    }
+
+                    // 检查是否有 finishReason
+                    if (candidate.finishReason) {
+                        log(`\n完成原因: ${candidate.finishReason}`);
+                    }
+                }
+
+                // 检查其他顶级字段
+                log('\n=== 其他字段 ===');
+                Object.keys(result).forEach(key => {
+                    if (key !== 'candidates') {
+                        log(`${key}:`, typeof result[key] === 'object' ? JSON.stringify(result[key]) : result[key]);
+                    }
+                });
+
+            } catch (error) {
+                log('\n❌ 错误:', error.message);
+                console.error('API 测试失败:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function testSimplePrompt() {
+            // 设置一个简单的提示词
+            document.getElementById('test-prompt').value = 'apple';
+            testAPI();
+        }
+
+        // 页面加载时从 localStorage 恢复 API key
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('nanobanana_api_key');
+            if (savedKey) {
+                document.getElementById('api-key').value = savedKey;
+                log('已从 localStorage 恢复 API Key');
+            }
+        });
+
+        // 保存 API key 到 localStorage
+        document.getElementById('api-key').addEventListener('change', (e) => {
+            localStorage.setItem('nanobanana_api_key', e.target.value);
+            log('API Key 已保存到 localStorage');
+        });
+    </script>
+</body>
+</html>
