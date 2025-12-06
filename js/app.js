@@ -8,12 +8,16 @@ class StorybookApp {
         this.currentVocabulary = null;
         this.generatedImageBase64 = null;
 
+        // 历史记录管理
+        this.maxHistoryItems = 20; // 最多保存20条历史记录
+
         this.init();
     }
 
     init() {
         this.bindEvents();
         this.loadAPIConfig();
+        this.loadHistory();
     }
 
     // 绑定事件
@@ -48,6 +52,9 @@ class StorybookApp {
 
         // 标题输入变化
         document.getElementById('title-input').addEventListener('input', () => this.updateGenerateVocabButton());
+
+        // 历史记录
+        document.getElementById('clear-history-btn').addEventListener('click', () => this.clearHistory());
     }
 
     // 绑定添加词汇按钮（支持动态创建的按钮）
@@ -340,6 +347,9 @@ class StorybookApp {
             // 隐藏加载状态，显示结果
             document.getElementById('loading-container').style.display = 'none';
             document.getElementById('result-container').style.display = 'block';
+
+            // 添加到历史记录
+            this.addToHistory();
         } catch (error) {
             alert('生成图片失败：' + error.message);
             document.getElementById('result-section').style.display = 'none';
@@ -382,6 +392,166 @@ class StorybookApp {
 
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 历史记录相关方法
+    // 加载历史记录
+    loadHistory() {
+        const historyData = localStorage.getItem('storybook_history');
+        this.history = historyData ? JSON.parse(historyData) : [];
+        this.displayHistory();
+    }
+
+    // 保存历史记录
+    saveHistory() {
+        localStorage.setItem('storybook_history', JSON.stringify(this.history));
+    }
+
+    // 添加到历史记录
+    addToHistory() {
+        if (!this.currentScene || !this.currentTitle || !this.currentVocabulary) {
+            return;
+        }
+
+        const historyItem = {
+            id: Date.now(),
+            scene: this.currentScene,
+            title: this.currentTitle,
+            vocabulary: JSON.parse(JSON.stringify(this.currentVocabulary)), // 深拷贝
+            imageBase64: this.generatedImageBase64, // 保存图片
+            timestamp: new Date().toISOString()
+        };
+
+        // 检查是否已存在相同的记录
+        const existingIndex = this.history.findIndex(item =>
+            item.scene === historyItem.scene &&
+            item.title === historyItem.title
+        );
+
+        if (existingIndex >= 0) {
+            // 如果存在，更新记录
+            this.history[existingIndex] = historyItem;
+        } else {
+            // 如果不存在，添加到开头
+            this.history.unshift(historyItem);
+        }
+
+        // 限制历史记录数量
+        if (this.history.length > this.maxHistoryItems) {
+            this.history = this.history.slice(0, this.maxHistoryItems);
+        }
+
+        this.saveHistory();
+        this.displayHistory();
+    }
+
+    // 显示历史记录
+    displayHistory() {
+        const historyList = document.getElementById('history-list');
+
+        if (this.history.length === 0) {
+            historyList.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+
+        this.history.forEach(item => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+
+            // 格式化日期
+            const date = new Date(item.timestamp);
+            const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+            // 获取预览词汇
+            const allWords = [];
+            if (item.vocabulary) {
+                ['核心', '物品', '环境'].forEach(category => {
+                    if (item.vocabulary[category]) {
+                        allWords.push(...item.vocabulary[category].slice(0, 2)); // 每类取2个
+                    }
+                });
+            }
+
+            historyItem.innerHTML = `
+                <div class="history-item-header">
+                    <span class="history-item-title">${item.title}</span>
+                    <span class="history-item-date">${dateStr}</span>
+                </div>
+                <div class="history-item-scene">场景：${item.scene}</div>
+                ${allWords.length > 0 ? `
+                    <div class="history-item-preview">
+                        ${allWords.slice(0, 6).map(word =>
+                            `<span class="history-item-vocab">${word}</span>`
+                        ).join('')}
+                        ${allWords.length > 6 ? '<span class="history-item-vocab">...</span>' : ''}
+                    </div>
+                ` : ''}
+            `;
+
+            // 点击历史记录项
+            historyItem.addEventListener('click', () => this.loadHistoryItem(item));
+
+            historyList.appendChild(historyItem);
+        });
+    }
+
+    // 加载历史记录项
+    loadHistoryItem(item) {
+        // 恢复数据
+        this.currentScene = item.scene;
+        this.currentTitle = item.title;
+        this.currentVocabulary = JSON.parse(JSON.stringify(item.vocabulary));
+
+        // 如果有图片，也恢复图片
+        if (item.imageBase64) {
+            this.generatedImageBase64 = item.imageBase64;
+        }
+
+        // 更新界面
+        document.getElementById('title-input').value = item.title;
+
+        // 更新场景选择
+        document.querySelectorAll('.scene-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.scene === item.scene) {
+                btn.classList.add('active');
+            }
+        });
+
+        // 清空自定义场景输入
+        document.getElementById('custom-scene-input').value = '';
+
+        // 显示选中的场景
+        this.showSelectedScene(item.scene);
+
+        // 显示词汇
+        document.getElementById('vocab-section').style.display = 'block';
+        this.displayVocabulary();
+
+        // 如果有图片，显示图片
+        if (item.imageBase64) {
+            document.getElementById('result-section').style.display = 'block';
+            document.getElementById('loading-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('result-image').src = `data:image/jpeg;base64,${item.imageBase64}`;
+        }
+
+        // 更新按钮状态
+        this.updateGenerateVocabButton();
+
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 清空历史记录
+    clearHistory() {
+        if (confirm('确定要清空所有历史记录吗？此操作不可恢复。')) {
+            this.history = [];
+            this.saveHistory();
+            this.displayHistory();
+        }
     }
 }
 
