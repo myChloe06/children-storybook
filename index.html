@@ -13,127 +13,119 @@
             <p class="subtitle">为 5-9 岁儿童生成双语识字小报</p>
         </header>
 
-        <!-- API 配置（可折叠） -->
-        <section class="section api-section-collapsible">
-            <h2 onclick="toggleApiSection()">🔧 API 配置 <span id="api-toggle-icon">▼</span></h2>
-            <div id="api-config-content">
-                <div class="api-config-container">
-                    <!-- NanoBanana API -->
-                    <div class="api-group">
-                        <h3>📷 NanoBanana API（图片生成）</h3>
-                        <div class="form-group">
-                            <label>API Key <span class="required">*</span></label>
-                            <input type="password" id="nanobanana-key" placeholder="请输入 NanoBanana API Key">
+        <div class="main-layout">
+            <!-- 左侧配置区 -->
+            <div class="left-panel">
+                <!-- API 配置 -->
+                <section class="section">
+                    <h2>🔧 API 配置</h2>
+                    <div class="api-config-content">
+                        <div class="api-group">
+                            <h3>📷 NanoBanana API（图片生成）</h3>
+                            <div class="form-group">
+                                <label>API Key <span class="required">*</span></label>
+                                <input type="password" id="nanobanana-key" placeholder="请输入 NanoBanana API Key">
+                            </div>
+                        </div>
+
+                        <div class="api-group">
+                            <h3>💬 文本生成 API（词汇生成/翻译）</h3>
+                            <div class="form-group">
+                                <label>接口地址 <span class="required">*</span></label>
+                                <input type="text" id="text-api-url" value="https://api.siliconflow.cn/v1/chat/completions">
+                                <small>支持 OpenAI 兼容格式的 API</small>
+                            </div>
+                            <div class="form-group">
+                                <label>API Key <span class="required">*</span></label>
+                                <input type="password" id="text-api-key" placeholder="请输入文本 API Key">
+                            </div>
+                            <div class="form-group">
+                                <label>模型名称 <span class="required">*</span></label>
+                                <input type="text" id="text-api-model" value="Pro/deepseek-ai/DeepSeek-V3.2">
+                            </div>
                         </div>
                     </div>
-
-                    <!-- 文本生成 API -->
-                    <div class="api-group">
-                        <h3>💬 文本生成 API（词汇生成/翻译）</h3>
-                        <div class="form-group">
-                            <label>接口地址 <span class="required">*</span></label>
-                            <input type="text" id="text-api-url" value="https://api.siliconflow.cn/v1/chat/completions">
-                            <small>支持 OpenAI 兼容格式的 API</small>
-                        </div>
-                        <div class="form-group">
-                            <label>API Key <span class="required">*</span></label>
-                            <input type="password" id="text-api-key" placeholder="请输入文本 API Key">
-                        </div>
-                        <div class="form-group">
-                            <label>模型名称 <span class="required">*</span></label>
-                            <input type="text" id="text-api-model" value="Pro/deepseek-ai/DeepSeek-V3.2">
-                        </div>
+                    <div class="button-group">
+                        <button id="save-api-btn" class="btn btn-secondary">保存配置</button>
+                        <button id="clear-api-btn" class="btn btn-secondary">清除配置</button>
                     </div>
-                </div>
+                </section>
 
-                <div class="button-group">
-                    <button id="save-api-btn" class="btn btn-secondary">保存配置</button>
-                    <button id="clear-api-btn" class="btn btn-secondary">清除配置</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 主应用区域（默认展开）-->
-        <div id="main-app">
-            <!-- 场景选择 -->
-            <section class="section">
-                <h2>1️⃣ 选择或输入场景</h2>
-                <div class="scene-selection">
-                    <div class="preset-scenes">
-                        <button class="scene-btn" data-scene="超市">🛒 超市</button>
-                        <button class="scene-btn" data-scene="医院">🏥 医院</button>
-                        <button class="scene-btn" data-scene="公园">🌳 公园</button>
-                        <button class="scene-btn" data-scene="动物园">🦁 动物园</button>
-                        <button class="scene-btn" data-scene="学校">🏫 学校</button>
-                    </div>
-                    <div class="custom-scene">
-                        <label>或自定义场景：</label>
-                        <input type="text" id="custom-scene-input" placeholder="如：游乐场、图书馆">
-                        <button id="confirm-custom-scene-btn" class="btn btn-small">确定</button>
+                <!-- 场景和词汇配置 -->
+                <section class="section">
+                    <h2>1️⃣ 场景配置</h2>
+                    <div class="scene-selection">
+                        <div class="preset-scenes">
+                            <button class="scene-btn" data-scene="超市">🛒 超市</button>
+                            <button class="scene-btn" data-scene="医院">🏥 医院</button>
+                            <button class="scene-btn" data-scene="公园">🌳 公园</button>
+                            <button class="scene-btn" data-scene="动物园">🦁 动物园</button>
+                            <button class="scene-btn" data-scene="学校">🏫 学校</button>
+                        </div>
+                        <div class="custom-scene">
+                            <input type="text" id="custom-scene-input" placeholder="或输入自定义场景">
+                            <button id="confirm-custom-scene-btn" class="btn btn-small">确定</button>
+                        </div>
                     </div>
                     <div id="selected-scene" class="selected-info"></div>
-                </div>
-            </section>
+                </section>
 
-            <!-- 标题输入 -->
-            <section class="section">
-                <h2>2️⃣ 输入小报标题</h2>
-                <input type="text" id="title-input" class="title-input" placeholder='如：《我的超市之旅》'>
-            </section>
-
-            <div class="button-group">
-                <button id="generate-vocab-btn" class="btn btn-primary" disabled>生成词汇预览</button>
-            </div>
-
-            <!-- 词汇列表（初始隐藏）-->
-            <section id="vocab-section" class="section" style="display: none;">
-                <h2>3️⃣ 词汇列表（可编辑）</h2>
-                <div id="vocab-container">
-                    <!-- 核心词汇 -->
-                    <div class="vocab-category">
-                        <h3>核心角色与设施（3-5个）</h3>
-                        <ul id="vocab-core" class="vocab-list"></ul>
-                        <button class="add-word-btn" data-category="核心">+ 添加词汇</button>
-                    </div>
-
-                    <!-- 物品词汇 -->
-                    <div class="vocab-category">
-                        <h3>常见物品/工具（5-8个）</h3>
-                        <ul id="vocab-items" class="vocab-list"></ul>
-                        <button class="add-word-btn" data-category="物品">+ 添加词汇</button>
-                    </div>
-
-                    <!-- 环境词汇 -->
-                    <div class="vocab-category">
-                        <h3>环境与装饰（3-5个）</h3>
-                        <ul id="vocab-environment" class="vocab-list"></ul>
-                        <button class="add-word-btn" data-category="环境">+ 添加词汇</button>
-                    </div>
-                </div>
+                <!-- 标题输入 -->
+                <section class="section">
+                    <h2>2️⃣ 小报标题</h2>
+                    <input type="text" id="title-input" class="title-input" placeholder='如：《我的超市之旅》'>
+                </section>
 
                 <div class="button-group">
-                    <button id="test-simple-image-btn" class="btn btn-secondary" onclick="testSimpleImage()">🍎 测试简单图片</button>
-                    <button id="generate-image-btn" class="btn btn-primary btn-large">🎨 生成图片</button>
+                    <button id="generate-vocab-btn" class="btn btn-primary" disabled>生成词汇</button>
                 </div>
-            </section>
 
-            <!-- 生成结果（初始隐藏）-->
-            <section id="result-section" class="section" style="display: none;">
-                <h2>4️⃣ 生成结果</h2>
-                <div id="loading-container" class="loading-container">
-                    <div class="spinner"></div>
-                    <p id="loading-text">正在生成图片，请稍候...</p>
-                    <p id="loading-hint">预计需要 2-5 分钟（异步任务模式）</p>
-                </div>
-                <div id="result-container" class="result-container" style="display: none;">
-                    <img id="result-image" alt="生成的识字小报">
-                    <div class="button-group">
-                        <button id="download-btn" class="btn btn-primary">下载图片</button>
-                        <button id="regenerate-btn" class="btn btn-secondary">重新生成</button>
-                        <button id="new-generation-btn" class="btn btn-secondary">生成新的</button>
+                <!-- 词汇列表 -->
+                <section id="vocab-section" class="section" style="display: none;">
+                    <h2>3️⃣ 词汇列表</h2>
+                    <div class="vocab-container">
+                        <div class="vocab-category">
+                            <h3>核心角色与设施</h3>
+                            <button class="add-word-btn btn btn-small" data-category="核心">+ 添加词汇</button>
+                            <div id="vocab-core" class="vocab-grid"></div>
+                        </div>
+                        <div class="vocab-category">
+                            <h3>常见物品/工具</h3>
+                            <button class="add-word-btn btn btn-small" data-category="物品">+ 添加词汇</button>
+                            <div id="vocab-items" class="vocab-grid"></div>
+                        </div>
+                        <div class="vocab-category">
+                            <h3>环境与装饰</h3>
+                            <button class="add-word-btn btn btn-small" data-category="环境">+ 添加词汇</button>
+                            <div id="vocab-environment" class="vocab-grid"></div>
+                        </div>
                     </div>
+                </section>
+
+                <div class="button-group">
+                    <button id="generate-image-btn" class="btn btn-primary" disabled>🎨 生成图片</button>
                 </div>
-            </section>
+            </div>
+
+            <!-- 右侧结果区 -->
+            <div class="right-panel">
+                <section id="result-section" class="section" style="display: none;">
+                    <h2>4️⃣ 生成结果</h2>
+                    <div id="loading-container" class="loading-container">
+                        <div class="spinner"></div>
+                        <p id="loading-text">正在生成图片，请稍候...</p>
+                        <p id="loading-hint">预计需要 2-5 分钟（异步任务模式）</p>
+                    </div>
+                    <div id="result-container" class="result-container" style="display: none;">
+                        <img id="result-image" alt="生成的识字小报">
+                        <div class="button-group">
+                            <button id="download-btn" class="btn btn-primary">下载图片</button>
+                            <button id="regenerate-btn" class="btn btn-secondary">重新生成</button>
+                            <button id="new-generation-btn" class="btn btn-secondary">生成新的</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
 
@@ -167,78 +159,5 @@
     <script src="js/prompt.js"></script>
     <script src="js/app.js"></script>
 
-    <script>
-        // 切换 API 配置区域显示/隐藏
-        function toggleApiSection() {
-            const section = document.querySelector('.api-section-collapsible');
-            const icon = document.getElementById('api-toggle-icon');
-
-            if (section.classList.contains('api-section-collapsed')) {
-                section.classList.remove('api-section-collapsed');
-                icon.textContent = '▼';
-                document.getElementById('api-config-content').style.display = 'block';
-            } else {
-                section.classList.add('api-section-collapsed');
-                icon.textContent = '▶';
-                document.getElementById('api-config-content').style.display = 'none';
-            }
-        }
-
-        // 页面加载时，默认折叠 API 配置
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                toggleApiSection();
-            }, 500);
-        });
-
-        // 测试简单图片生成
-        async function testSimpleImage() {
-            // 使用全局的应用实例
-            let app = window.storybookApp;
-
-            // 如果没有全局实例，创建一个并确保加载配置
-            if (!app) {
-                app = new StorybookApp();
-                window.storybookApp = app;
-
-                // 确保加载了 API 配置
-                if (app.apiConfig && app.apiConfig.isValid()) {
-                    const config = app.apiConfig.load();
-                    console.log('加载的 API 配置:', {
-                        hasNanoBananaKey: !!config.nanoBananaKey,
-                        nanoBananaKeyLength: config.nanoBananaKey ? config.nanoBananaKey.length : 0
-                    });
-                } else {
-                    alert('请先配置 API Key！');
-                    return;
-                }
-            }
-
-            // 显示结果区域和加载状态
-            document.getElementById('result-section').style.display = 'block';
-            document.getElementById('loading-container').style.display = 'block';
-            document.getElementById('result-container').style.display = 'none';
-
-            // 更新加载文本
-            document.getElementById('loading-text').textContent = '正在测试简单图片生成...';
-
-            try {
-                // 使用一个非常简单的提示词
-                const simplePrompt = '一个红苹果，卡通风格，白色背景';
-                const base64Image = await app.apiClient.generateImage(simplePrompt);
-
-                // 显示图片
-                const imgElement = document.getElementById('result-image');
-                imgElement.src = `data:image/jpeg;base64,${base64Image}`;
-
-                // 隐藏加载状态，显示结果
-                document.getElementById('loading-container').style.display = 'none';
-                document.getElementById('result-container').style.display = 'block';
-            } catch (error) {
-                alert('测试简单图片失败：' + error.message);
-                document.getElementById('result-section').style.display = 'none';
-            }
-        }
-    </script>
-</body>
+  </body>
 </html>

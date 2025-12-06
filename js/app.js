@@ -31,10 +31,10 @@ class StorybookApp {
         // 生成词汇
         document.getElementById('generate-vocab-btn').addEventListener('click', () => this.generateVocabulary());
 
-        // 添加词汇
-        document.querySelectorAll('.add-word-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.showAddWordModal(e.target.dataset.category));
-        });
+        // 添加词汇（初始绑定）
+        this.bindAddWordButtons();
+
+        // 模态框
         document.getElementById('modal-cancel-btn').addEventListener('click', () => this.hideAddWordModal());
         document.getElementById('modal-add-btn').addEventListener('click', () => this.addWord());
 
@@ -48,6 +48,19 @@ class StorybookApp {
 
         // 标题输入变化
         document.getElementById('title-input').addEventListener('input', () => this.updateGenerateVocabButton());
+    }
+
+    // 绑定添加词汇按钮（支持动态创建的按钮）
+    bindAddWordButtons() {
+        document.querySelectorAll('.add-word-btn').forEach(btn => {
+            // 移除现有的事件监听器（避免重复绑定）
+            btn.replaceWith(btn.cloneNode(true));
+        });
+
+        // 重新绑定所有按钮
+        document.querySelectorAll('.add-word-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.showAddWordModal(e.target.dataset.category));
+        });
     }
 
     // 加载 API 配置
@@ -134,6 +147,20 @@ class StorybookApp {
         btn.disabled = !(this.currentScene && title);
     }
 
+    // 更新生成图片按钮状态
+    updateGenerateImageButton() {
+        const btn = document.getElementById('generate-image-btn');
+        // 检查是否有场景、标题和词汇
+        const hasScene = this.currentScene && this.currentScene.trim() !== '';
+        const hasTitle = this.currentTitle && this.currentTitle.trim() !== '';
+        const hasVocabulary = this.currentVocabulary &&
+            this.currentVocabulary['核心'] && this.currentVocabulary['核心'].length > 0 &&
+            this.currentVocabulary['物品'] && this.currentVocabulary['物品'].length > 0 &&
+            this.currentVocabulary['环境'] && this.currentVocabulary['环境'].length > 0;
+
+        btn.disabled = !(hasScene && hasTitle && hasVocabulary);
+    }
+
     // 生成词汇
     async generateVocabulary() {
         this.currentTitle = document.getElementById('title-input').value.trim();
@@ -173,6 +200,9 @@ class StorybookApp {
         this.displayCategoryVocabulary('核心', 'vocab-core');
         this.displayCategoryVocabulary('物品', 'vocab-items');
         this.displayCategoryVocabulary('环境', 'vocab-environment');
+
+        // 更新生成图片按钮状态
+        this.updateGenerateImageButton();
     }
 
     // 显示某个类别的词汇
@@ -182,9 +212,10 @@ class StorybookApp {
 
         const words = this.currentVocabulary[category] || [];
         words.forEach((word, index) => {
-            const li = document.createElement('li');
+            const vocabItem = document.createElement('div');
+            vocabItem.className = 'vocab-item';
 
-            const wordSpan = document.createElement('span');
+            const wordSpan = document.createElement('div');
             wordSpan.className = 'vocab-word';
 
             // 分离英文和汉字
@@ -192,23 +223,28 @@ class StorybookApp {
             const english = parts.slice(0, -1).join(' ');
             const chinese = parts[parts.length - 1];
 
-            wordSpan.innerHTML = `<span class="english">${english}</span> <span class="chinese">${chinese}</span>`;
+            wordSpan.innerHTML = `<span class="english">${english}</span><span class="chinese">${chinese}</span>`;
 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-word-btn';
-            deleteBtn.textContent = '删除';
+            deleteBtn.textContent = '×';
             deleteBtn.addEventListener('click', () => this.deleteWord(category, index));
 
-            li.appendChild(wordSpan);
-            li.appendChild(deleteBtn);
-            container.appendChild(li);
+            vocabItem.appendChild(wordSpan);
+            vocabItem.appendChild(deleteBtn);
+            container.appendChild(vocabItem);
         });
+
+        // 重新绑定添加词汇按钮（因为按钮在HTML中已经存在）
+        this.bindAddWordButtons();
     }
 
     // 删除词汇
     deleteWord(category, index) {
         this.currentVocabulary[category].splice(index, 1);
         this.displayCategoryVocabulary(category, this.getCategoryElementId(category));
+        // 更新生成图片按钮状态
+        this.updateGenerateImageButton();
     }
 
     // 获取类别对应的元素ID
@@ -263,6 +299,9 @@ class StorybookApp {
 
             // 关闭模态框
             this.hideAddWordModal();
+
+            // 更新生成图片按钮状态
+            this.updateGenerateImageButton();
         } catch (error) {
             alert('翻译失败：' + error.message);
         } finally {
