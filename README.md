@@ -147,7 +147,7 @@ children-storybook/
 - ⚠️ 不要在公共电脑上保存 API Key
 - ⚠️ 不要与他人分享你的 API Key
 
-### CORS 问题
+### CORS 问题与 GitHub Pages 限制
 
 如果遇到跨域错误（CORS），可能的原因：
 
@@ -157,6 +157,29 @@ children-storybook/
 
 2. **需要后端代理**
    - 如果 API 不支持 CORS，需要搭建简单的 Node.js 代理服务器
+
+3. **GitHub Pages 限制**
+   - GitHub Pages 部署的应用由于安全策略限制，无法直接调用外部 API
+   - 错误信息示例：
+     - `Failed to load resource: the server responded with a status of 404`
+     - `Unchecked runtime.lastError: The message port closed before a response was received`
+
+   **解决方案：**
+
+   - **本地运行（推荐）**：下载项目后在本地运行
+
+     ```bash
+     # 使用 Python
+     python -m http.server 8000
+
+     # 使用 Node.js
+     npx serve .
+
+     # 然后访问 http://localhost:8000
+     ```
+
+   - **使用代理服务**：配置支持 CORS 的代理服务器
+   - **寻找支持 CORS 的 API**：使用允许跨域请求的 API 服务
 
 ## 常见问题
 

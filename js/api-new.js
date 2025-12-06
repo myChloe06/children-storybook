@@ -256,12 +256,23 @@ class APIClient {
 
             const createResult = await createResponse.json();
             console.log('任务创建成功:', createResult);
+            console.log('响应结构:', JSON.stringify(createResult, null, 2));
 
-            if (createResult.code !== 200 || !createResult.data.taskId) {
-                throw new Error('创建任务失败：未返回有效的 taskId');
+            // 检查不同的响应结构
+            let taskId = null;
+            if (createResult.data && createResult.data.taskId) {
+                taskId = createResult.data.taskId;
+            } else if (createResult.taskId) {
+                taskId = createResult.taskId;
+            } else if (createResult.id) {
+                taskId = createResult.id;
             }
 
-            const taskId = createResult.data.taskId;
+            if (!taskId) {
+                console.error('无法从响应中提取 taskId，响应内容:', createResult);
+                throw new Error(`创建任务失败：未返回有效的 taskId。响应结构：${JSON.stringify(createResult)}`);
+            }
+
             console.log('任务 ID:', taskId);
 
             // 步骤 2: 轮询任务状态
