@@ -10,7 +10,7 @@ class StorybookApp {
         this.generatedImageBase64 = null;
 
         // 历史记录管理
-        this.maxHistoryItems = 20; // 最多保存20条历史记录
+        this.maxHistoryItems = 10; // 最多保存10条历史记录
 
         this.init();
     }
@@ -450,13 +450,16 @@ class StorybookApp {
             return;
         }
 
+        // 获取当前选择的API版本
+        const apiVersion = document.querySelector('input[name="api-version"]:checked').value;
+
         const historyItem = {
             id: Date.now(),
             scene: this.currentScene,
             title: this.currentTitle,
             vocabulary: JSON.parse(JSON.stringify(this.currentVocabulary)), // 深拷贝
-            imageBase64: this.generatedImageBase64, // 保存图片
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            apiVersion: apiVersion
         };
 
         // 检查是否已存在相同的记录
@@ -478,7 +481,24 @@ class StorybookApp {
             this.history = this.history.slice(0, this.maxHistoryItems);
         }
 
-        this.saveHistory();
+        try {
+            this.saveHistory();
+        } catch (error) {
+            if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                alert('存储空间已满，正在清理历史记录...');
+                this.history = [];
+                try {
+                    this.saveHistory();
+                    alert('历史记录已清理，请重新生成内容。');
+                } catch (clearError) {
+                    console.error('清理历史记录失败:', clearError);
+                    alert('清理历史记录失败，请检查浏览器存储设置。');
+                }
+            } else {
+                console.error('保存历史记录失败:', error);
+                alert('保存历史记录失败，请稍后重试。');
+            }
+        }
         this.displayHistory();
     }
 
@@ -499,32 +519,53 @@ class StorybookApp {
 
             // 格式化日期
             const date = new Date(item.timestamp);
-            const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
 
-            // 获取预览词汇
-            const allWords = [];
+            let dateStr;
+            if (isToday) {
+                // 今天显示时间
+                dateStr = `今天 ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+            } else {
+                // 其他日期显示月日和时间
+                dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+            }
+
+            // 获取预览词汇 - 减少显示数量，只显示前4个
+            const previewWords = [];
             if (item.vocabulary) {
-                ['核心', '物品', '环境'].forEach(category => {
-                    if (item.vocabulary[category]) {
-                        allWords.push(...item.vocabulary[category].slice(0, 2)); // 每类取2个
+                // 按优先级获取词汇：核心 > 物品 > 环境
+                const categories = ['核心', '物品', '环境'];
+                for (const category of categories) {
+                    if (item.vocabulary[category] && previewWords.length < 4) {
+                        const wordsToAdd = item.vocabulary[category].slice(0, 4 - previewWords.length);
+                        previewWords.push(...wordsToAdd);
                     }
-                });
+                }
             }
 
             historyItem.innerHTML = `
                 <div class="history-item-header">
-                    <span class="history-item-title">${item.title}</span>
+                    <span class="history-item-title" title="${item.title}">${this.truncateText(item.title, 20)}</span>
                     <span class="history-item-date">${dateStr}</span>
                 </div>
-                <div class="history-item-scene">场景：${item.scene}</div>
-                ${allWords.length > 0 ? `
-                    <div class="history-item-preview">
-                        ${allWords.slice(0, 6).map(word =>
-                            `<span class="history-item-vocab">${word}</span>`
-                        ).join('')}
-                        ${allWords.length > 6 ? '<span class="history-item-vocab">...</span>' : ''}
+                <div class="history-item-content">
+                    <div class="history-item-scene">
+                        <span class="scene-label">场景</span>
+                        <span class="scene-value">${item.scene}</span>
                     </div>
-                ` : ''}
+                    ${previewWords.length > 0 ? `
+                        <div class="history-item-vocab-preview">
+                            <span class="vocab-label">词汇</span>
+                            <div class="vocab-list">
+                                ${previewWords.map(word =>
+                                    `<span class="history-item-vocab">${word}</span>`
+                                ).join('')}
+                                ${this.getTotalWordCount(item.vocabulary) > previewWords.length ? `<span class="vocab-more">+${this.getTotalWordCount(item.vocabulary) - previewWords.length}</span>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
             `;
 
             // 点击历史记录项
@@ -534,6 +575,24 @@ class StorybookApp {
         });
     }
 
+    // 辅助方法：截断文本
+    truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 1) + '...';
+    }
+
+    // 辅助方法：获取词汇总数
+    getTotalWordCount(vocabulary) {
+        if (!vocabulary) return 0;
+        let count = 0;
+        ['核心', '物品', '环境'].forEach(category => {
+            if (vocabulary[category]) {
+                count += vocabulary[category].length;
+            }
+        });
+        return count;
+    }
+
     // 加载历史记录项
     loadHistoryItem(item) {
         // 恢复数据
@@ -541,10 +600,8 @@ class StorybookApp {
         this.currentTitle = item.title;
         this.currentVocabulary = JSON.parse(JSON.stringify(item.vocabulary));
 
-        // 如果有图片，也恢复图片
-        if (item.imageBase64) {
-            this.generatedImageBase64 = item.imageBase64;
-        }
+        // 清除当前图片数据
+        this.generatedImageBase64 = null;
 
         // 更新界面
         document.getElementById('title-input').value = item.title;
@@ -567,13 +624,11 @@ class StorybookApp {
         document.getElementById('vocab-section').style.display = 'block';
         this.displayVocabulary();
 
-        // 如果有图片，显示图片
-        if (item.imageBase64) {
-            document.getElementById('result-section').style.display = 'block';
-            document.getElementById('loading-container').style.display = 'none';
-            document.getElementById('result-container').style.display = 'block';
-            document.getElementById('result-image').src = `data:image/jpeg;base64,${item.imageBase64}`;
-        }
+        // 隐藏结果区域（不显示图片）
+        document.getElementById('result-section').style.display = 'none';
+
+        // 显示提示信息
+        alert('历史记录已加载！\n\n文字内容已恢复，包括标题、场景和词汇。\n\n请点击"生成图片"按钮来生成新的图片。');
 
         // 更新按钮状态
         this.updateGenerateVocabButton();

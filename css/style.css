@@ -439,54 +439,108 @@ header .subtitle {
 
 .history-item {
     background: white;
-    padding: 10px 12px;
-    border-radius: 6px;
+    padding: 12px 15px;
+    border-radius: 8px;
     border: 1px solid #dee2e6;
     cursor: pointer;
     transition: all 0.3s;
     font-size: 0.9em;
+    margin-bottom: 8px;
 }
 
 .history-item:hover {
     border-color: #667eea;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    transform: translateY(-1px);
 }
 
 .history-item-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
+    align-items: flex-start;
+    margin-bottom: 8px;
 }
 
 .history-item-title {
     font-weight: 600;
-    color: #495057;
-}
-
-.history-item-scene {
-    color: #6c757d;
-    font-size: 0.85em;
+    color: #2c3e50;
+    font-size: 1.05em;
+    flex: 1;
+    margin-right: 10px;
+    line-height: 1.3;
 }
 
 .history-item-date {
-    color: #adb5bd;
+    color: #90a4ae;
     font-size: 0.8em;
+    white-space: nowrap;
 }
 
-.history-item-preview {
+.history-item-content {
     display: flex;
-    gap: 5px;
-    margin-top: 5px;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.history-item-scene {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.scene-label {
+    color: #78909c;
+    font-size: 0.8em;
+    font-weight: 500;
+    min-width: 35px;
+}
+
+.scene-value {
+    color: #546e7a;
+    font-size: 0.85em;
+    background: #f5f7fa;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.history-item-vocab-preview {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.vocab-label {
+    color: #78909c;
+    font-size: 0.8em;
+    font-weight: 500;
+    min-width: 35px;
+    margin-top: 2px;
+}
+
+.vocab-list {
+    display: flex;
     flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
 }
 
 .history-item-vocab {
-    background: #f8f9fa;
-    padding: 2px 6px;
-    border-radius: 3px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf0 100%);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    color: #455a64;
+    border: 1px solid #e0e4e8;
+    font-weight: 500;
+}
+
+.vocab-more {
+    background: #667eea;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 5px;
     font-size: 0.75em;
-    color: #495057;
+    font-weight: 600;
 }
 
 .history-empty {
