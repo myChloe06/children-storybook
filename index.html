@@ -153,7 +153,7 @@
 
     <!-- 添加词汇模态框 -->
     <div id="add-word-modal" class="modal" style="display: none;">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <h3>添加新词汇</h3>
             <div class="form-group">
                 <label>类别</label>
@@ -161,16 +161,22 @@
             </div>
             <div class="form-group">
                 <label>输入汉字 <span class="required">*</span></label>
-                <input type="text" id="modal-word-input" placeholder="如：苹果">
-                <small>AI 将自动翻译成英文</small>
+                <textarea id="modal-word-input" placeholder="请输入中文词汇，每行一个：&#10;苹果&#10;香蕉&#10;橙子" rows="5"></textarea>
+                <small>每行输入一个中文词汇，可一次添加多个</small>
             </div>
             <div class="button-group">
                 <button id="modal-cancel-btn" class="btn btn-secondary">取消</button>
-                <button id="modal-add-btn" class="btn btn-primary">添加</button>
+                <button id="modal-add-btn" class="btn btn-primary">添加到列表</button>
+                <button id="modal-batch-translate-btn" class="btn btn-success" style="display: none;">批量翻译</button>
             </div>
             <div id="modal-loading" class="modal-loading" style="display: none;">
                 <div class="spinner small"></div>
-                <span>正在翻译...</span>
+                <span>正在处理...</span>
+            </div>
+            <!-- 待翻译词汇列表 -->
+            <div id="pending-words-container" style="display: none; margin-top: 20px;">
+                <h4>待翻译词汇</h4>
+                <div id="pending-words-list"></div>
             </div>
         </div>
     </div>

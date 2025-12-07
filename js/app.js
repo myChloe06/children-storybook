@@ -41,7 +41,8 @@ class StorybookApp {
 
         // 模态框
         document.getElementById('modal-cancel-btn').addEventListener('click', () => this.hideAddWordModal());
-        document.getElementById('modal-add-btn').addEventListener('click', () => this.addWord());
+        document.getElementById('modal-add-btn').addEventListener('click', () => this.addPendingWords());
+        document.getElementById('modal-batch-translate-btn').addEventListener('click', () => this.batchTranslate());
 
         // 生成图片
         document.getElementById('generate-image-btn').addEventListener('click', () => this.generateImage());
@@ -277,6 +278,9 @@ class StorybookApp {
         document.getElementById('modal-category-name').textContent = category;
         document.getElementById('modal-word-input').value = '';
         document.getElementById('add-word-modal').style.display = 'flex';
+        // 重置待翻译词汇列表
+        this.pendingWords = [];
+        this.updatePendingWordsDisplay();
     }
 
     // 隐藏添加词汇模态框
@@ -285,27 +289,135 @@ class StorybookApp {
         this.currentAddCategory = null;
     }
 
-    // 添加词汇
-    async addWord() {
-        const chineseWord = document.getElementById('modal-word-input').value.trim();
-        if (!chineseWord) {
-            alert('请输入汉字');
+    // 添加词汇到待翻译列表
+    addPendingWords() {
+        const input = document.getElementById('modal-word-input');
+        const words = input.value.trim().split('\n').filter(word => word.trim());
+
+        if (words.length === 0) {
+            alert('请输入至少一个中文词汇');
+            return;
+        }
+
+        // 添加到待翻译列表
+        words.forEach(word => {
+            const trimmedWord = word.trim();
+            if (trimmedWord && !this.pendingWords.includes(trimmedWord)) {
+                this.pendingWords.push(trimmedWord);
+            }
+        });
+
+        // 清空输入框
+        input.value = '';
+
+        // 更新显示
+        this.updatePendingWordsDisplay();
+    }
+
+    // 更新待翻译词汇显示
+    updatePendingWordsDisplay() {
+        const container = document.getElementById('pending-words-container');
+        const list = document.getElementById('pending-words-list');
+        const batchTranslateBtn = document.getElementById('modal-batch-translate-btn');
+
+        if (this.pendingWords.length === 0) {
+            container.style.display = 'none';
+            batchTranslateBtn.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        batchTranslateBtn.style.display = 'inline-block';
+
+        list.innerHTML = '';
+        this.pendingWords.forEach((word, index) => {
+            const item = document.createElement('div');
+            item.className = 'pending-word-item';
+            item.innerHTML = `
+                <span>${word}</span>
+                <button onclick="app.removePendingWord(${index})">删除</button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // 移除待翻译词汇
+    removePendingWord(index) {
+        this.pendingWords.splice(index, 1);
+        this.updatePendingWordsDisplay();
+    }
+
+    // 批量翻译
+    async batchTranslate() {
+        if (this.pendingWords.length === 0) {
+            alert('没有待翻译的词汇');
             return;
         }
 
         // 显示加载状态
         document.getElementById('modal-loading').style.display = 'flex';
-        document.getElementById('modal-add-btn').disabled = true;
+        document.getElementById('modal-batch-translate-btn').disabled = true;
 
         try {
-            // 调用 API 翻译
-            const englishTranslation = await this.apiClient.translateToEnglish(chineseWord);
-            // 确保英文是小写
-            const formattedEnglish = englishTranslation.toLowerCase().trim();
-            const bilingualWord = `${formattedEnglish} ${chineseWord}`;
+            // 构建批量翻译的提示词
+            const wordsText = this.pendingWords.join('、');
+            const prompt = `请将以下中文词汇翻译成英文（全部小写），返回JSON格式：
+{
+  "translations": ["word1 english", "word2 english", "word3 english"]
+}
 
-            // 添加到词汇列表
-            this.currentVocabulary[this.currentAddCategory].push(bilingualWord);
+中文词汇：${wordsText}`;
+
+            // 调用 API 进行批量翻译
+            const { textAPIUrl, textAPIKey, textAPIModel } = this.apiConfig.load();
+
+            const response = await fetch(textAPIUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${textAPIKey}`
+                },
+                body: JSON.stringify({
+                    model: textAPIModel,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: '你是专业的翻译专家，将中文词汇翻译成英文（全部小写）。返回纯JSON格式。'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 1000
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`翻译请求失败: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const content = result.choices[0].message.content;
+
+            // 提取 JSON
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('翻译结果格式错误');
+            }
+
+            const translationData = JSON.parse(jsonMatch[0]);
+            const translations = translationData.translations || [];
+
+            // 将翻译结果添加到词汇列表
+            translations.forEach((translation, index) => {
+                if (this.pendingWords[index]) {
+                    const formattedEnglish = translation.toLowerCase().trim();
+                    const bilingualWord = `${formattedEnglish} ${this.pendingWords[index]}`;
+                    this.currentVocabulary[this.currentAddCategory].push(bilingualWord);
+                }
+            });
 
             // 刷新显示
             this.displayCategoryVocabulary(
@@ -318,11 +430,14 @@ class StorybookApp {
 
             // 更新生成图片按钮状态
             this.updateGenerateImageButton();
+
+            alert(`成功翻译并添加了 ${translations.length} 个词汇！`);
         } catch (error) {
-            alert('翻译失败：' + error.message);
+            console.error('批量翻译失败:', error);
+            alert('批量翻译失败：' + error.message);
         } finally {
             document.getElementById('modal-loading').style.display = 'none';
-            document.getElementById('modal-add-btn').disabled = false;
+            document.getElementById('modal-batch-translate-btn').disabled = false;
         }
     }
 
