@@ -300,7 +300,9 @@ class StorybookApp {
         try {
             // 调用 API 翻译
             const englishTranslation = await this.apiClient.translateToEnglish(chineseWord);
-            const bilingualWord = `${englishTranslation} ${chineseWord}`;
+            // 确保英文是小写
+            const formattedEnglish = englishTranslation.toLowerCase().trim();
+            const bilingualWord = `${formattedEnglish} ${chineseWord}`;
 
             // 添加到词汇列表
             this.currentVocabulary[this.currentAddCategory].push(bilingualWord);

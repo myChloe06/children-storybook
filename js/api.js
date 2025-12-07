@@ -123,11 +123,12 @@ class APIClient {
 
 要求：
 1. 每个词汇必须包含英文和汉字（格式：english 汉字）
-2. 分为三类：
+2. 英文单词必须全部小写
+3. 分为三类：
    - 核心角色与设施（3-5个）
    - 常见物品/工具（5-8个）
    - 环境与装饰（3-5个）
-3. 返回纯 JSON 格式，不要任何其他文字：
+4. 返回纯 JSON 格式，不要任何其他文字：
 {
   "核心": ["english 汉字", "english 汉字", ...],
   "物品": ["english 汉字", "english 汉字", ...],
@@ -175,10 +176,12 @@ class APIClient {
             // 提取 JSON（处理可能的 markdown 代码块）
             const jsonMatch = content.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
+                const vocabData = JSON.parse(jsonMatch[0]);
+                // 格式化所有词汇，确保英文部分是小写
+                return this.formatVocabulary(vocabData);
             }
 
-            return JSON.parse(content);
+            return this.formatVocabulary(JSON.parse(content));
         } catch (error) {
             console.error('生成词汇失败:', error);
             throw error;
@@ -201,11 +204,11 @@ class APIClient {
                     messages: [
                         {
                             role: 'system',
-                            content: '你是一个专业的翻译专家，将中文词汇翻译成简洁的英文。只返回英文翻译，不要其他解释。'
+                            content: '你是一个专业的翻译专家，将中文词汇翻译成简洁的英文。只返回英文翻译（全部小写），不要其他解释。'
                         },
                         {
                             role: 'user',
-                            content: `请将"${chineseWord}"翻译成英文，只返回英文单词或短语，不要其他内容。`
+                            content: `请将"${chineseWord}"翻译成英文，只返回英文单词或短语（全部小写），不要其他内容。`
                         }
                     ],
                     temperature: 0.3,
@@ -223,6 +226,22 @@ class APIClient {
             console.error('翻译失败:', error);
             throw error;
         }
+    }
+
+    // 格式化词汇，确保英文部分是小写
+    formatVocabulary(vocabData) {
+        const categories = ['核心', '物品', '环境'];
+        categories.forEach(category => {
+            if (vocabData[category]) {
+                vocabData[category] = vocabData[category].map(word => {
+                    const parts = word.split(' ');
+                    const chinese = parts[parts.length - 1];
+                    const english = parts.slice(0, -1).join(' ').toLowerCase();
+                    return `${english} ${chinese}`;
+                });
+            }
+        });
+        return vocabData;
     }
 
     // 生成图片
